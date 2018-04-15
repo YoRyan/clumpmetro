@@ -41,5 +41,6 @@ if __name__ == '__main__':
                 print(retrieved.isoformat(timespec='seconds'), stop,
                       t.isoformat(timespec='minutes'), d['route_id'], d['trip_id'],
                       sep=',')
+        sys.stdout.flush()
         sleep(30)
 
