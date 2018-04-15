@@ -8,6 +8,10 @@ import urllib.request
 from datetime import datetime
 from time import sleep
 
+__author__ = "Ryan Young"
+__email__ = "rayoung@utexas.edu"
+__license__ = "public domain"
+
 def get_trip_updates():
     data = None
     while data is None:
