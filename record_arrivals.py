@@ -31,46 +31,37 @@ def departures_for_stop(trip_updates, stop_id):
     inbound_trips = [(entity['trip_update']['trip'], stop_time_updates(entity)[0])
                      for entity in trip_updates['entity']
                      if len(stop_time_updates(entity)) == 1]
-    if len(inbound_trips) > 0:
-        return {datetime.fromtimestamp(stu['arrival']['time']): trip
-                for (trip, stu) in inbound_trips}
-    else:
-        return {}
+    return {datetime.fromtimestamp(stu['arrival']['time']): trip
+            for trip, stu in inbound_trips}
 
 if __name__ == '__main__':
     STOP_IDS = sys.argv[1:]
 
     print('stop id', 'arrival time', 'route', 'trip id', sep=',')
-    seen_routes = {stop: {} for stop in STOP_IDS}
-    seen_trips = {stop: set() for stop in STOP_IDS}
+    tracking_trips = {stop: {} for stop in STOP_IDS}
     while True:
         data = get_trip_updates()
         retrieved = datetime.fromtimestamp(data['header']['timestamp'])
 
         for stop in STOP_IDS:
-            predictions = departures_for_stop(data, stop)
-            departures = [d for (_, d) in predictions.items()]
-            future_trips = set([d['trip_id'] for d in departures])
+            # track all listed trips
+            for _, departure in departures_for_stop(data, stop).items():
+                trip_id = departure['trip_id']
+                route = departure['route_id']
+                tracking_trips[stop][trip_id] = (retrieved, route)
 
-            # seen before, now gone
-            for departed_trip in seen_trips[stop] - future_trips:
-                print(stop,
-                      retrieved.isoformat(timespec='seconds'),
-                      seen_routes[stop][departed_trip],
-                      departed_trip,
-                      sep=',')
-                seen_trips[stop].remove(departed_trip)
-                seen_routes[stop].pop(departed_trip)
-
-            # not seen before
-            for future_trip in future_trips - seen_trips[stop]:
-                departure = [d for d in departures if d['trip_id'] == future_trip][0]
-                predicted_time = [t for (t, d) in predictions.items()
-                                  if d['trip_id'] == future_trip][0]
-                # don't add trips that are still very far out
-                if abs(retrieved - predicted_time) < timedelta(minutes=15):
-                    seen_trips[stop].add(future_trip)
-                    seen_routes[stop][future_trip] = departure['route_id']
+            # finalize trips that haven't been seen in awhile
+            to_remove = []
+            for trip_id, (last_seen, route) in tracking_trips[stop].items():
+                if abs(retrieved - last_seen) >= timedelta(minutes=15):
+                    print(stop,
+                          last_seen.isoformat(timespec='seconds'),
+                          route,
+                          trip_id,
+                          sep=',')
+                    to_remove.append(trip_id)
+            for trip_id in to_remove:
+                tracking_trips[stop].pop(trip_id)
 
         sys.stdout.flush()
         sleep(30)
