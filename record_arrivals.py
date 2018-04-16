@@ -5,7 +5,7 @@
 import json
 import sys
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
 
 __author__ = "Ryan Young"
@@ -48,7 +48,8 @@ if __name__ == '__main__':
         retrieved = datetime.fromtimestamp(data['header']['timestamp'])
 
         for stop in STOP_IDS:
-            departures = [d for (_, d) in departures_for_stop(data, stop).items()]
+            predictions = departures_for_stop(data, stop)
+            departures = [d for (_, d) in predictions.items()]
             future_trips = set([d['trip_id'] for d in departures])
 
             # seen before, now gone
@@ -64,8 +65,12 @@ if __name__ == '__main__':
             # not seen before
             for future_trip in future_trips - seen_trips[stop]:
                 departure = [d for d in departures if d['trip_id'] == future_trip][0]
-                seen_trips[stop].add(future_trip)
-                seen_routes[stop][future_trip] = departure['route_id']
+                predicted_time = [t for (t, d) in predictions.items()
+                                  if d['trip_id'] == future_trip][0]
+                # don't add trips that are still very far out
+                if abs(retrieved - predicted_time) < timedelta(minutes=15):
+                    seen_trips[stop].add(future_trip)
+                    seen_routes[stop][future_trip] = departure['route_id']
 
         sys.stdout.flush()
         sleep(30)
