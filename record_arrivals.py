@@ -31,7 +31,7 @@ def departures_for_stop(trip_updates, stop_id):
     inbound_trips = [(entity['trip_update']['trip'], stop_time_updates(entity)[0])
                      for entity in trip_updates['entity']
                      if len(stop_time_updates(entity)) == 1]
-    return {datetime.fromtimestamp(stu['arrival']['time']): trip
+    return {datetime.fromtimestamp(stu['departure']['time']): trip
             for trip, stu in inbound_trips}
 
 if __name__ == '__main__':
