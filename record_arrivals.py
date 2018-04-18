@@ -6,6 +6,7 @@ import json
 import sys
 import urllib.request
 from datetime import datetime, timedelta
+from socket import timeout
 from time import sleep
 
 __author__ = "Ryan Young"
@@ -19,7 +20,7 @@ def get_trip_updates():
             req = urllib.request.urlopen('https://data.texas.gov/download/mqtr-wwpy/text%2Fplain',
                                          timeout=30)
             data = json.load(req)
-        except (urllib.request.URLError, json.JSONDecodeError):
+        except (urllib.request.URLError, json.JSONDecodeError, timeout):
             sleep(10)
             break
     return data
