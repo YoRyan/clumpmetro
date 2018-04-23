@@ -27,13 +27,16 @@ def get_trip_updates():
 
 def departures_for_stop(trip_updates, stop_id):
     """Return dict of time -> trip data"""
-    stop_time_updates = lambda entity: [stu for stu in entity['trip_update']['stop_time_update']
-                                        if stu['stop_id'] == str(stop_id)]
-    inbound_trips = [(entity['trip_update']['trip'], stop_time_updates(entity)[0])
-                     for entity in trip_updates['entity']
-                     if len(stop_time_updates(entity)) == 1]
-    return {datetime.fromtimestamp(stu['departure']['time']): trip
-            for trip, stu in inbound_trips}
+    try:
+        stop_time_updates = lambda entity: [stu for stu in entity['trip_update']['stop_time_update']
+                                            if stu['stop_id'] == str(stop_id)]
+        inbound_trips = [(entity['trip_update']['trip'], stop_time_updates(entity)[0])
+                         for entity in trip_updates['entity']
+                         if len(stop_time_updates(entity)) == 1]
+        return {datetime.fromtimestamp(stu['departure']['time']): trip
+                for trip, stu in inbound_trips}
+    except (ValueError, KeyError):
+        return {}
 
 if __name__ == '__main__':
     STOP_IDS = sys.argv[1:]
