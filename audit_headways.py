@@ -32,8 +32,8 @@ def calc_headways(arrivals):
 
 def headway_category(last_arrival, arrival):
     interval = arrival['arrival time'] - last_arrival['arrival time']
-    last_arrival_time = last_arrival['arrival time'].time()
-    arrival_time = arrival['arrival time'].time()
+    last_arrival_time = last_arrival['arrival time']
+    arrival_time = arrival['arrival time']
 
     def category(actual, target):
         if actual < datetime.timedelta(minutes=3):
@@ -48,14 +48,25 @@ def headway_category(last_arrival, arrival):
             return '10+ MIN LATE'
 
     # weekday schedule only
-    if arrival_time >= datetime.time(hour=20) or arrival_time < datetime.time(hour=4):
-        return category(interval, datetime.timedelta(minutes=20))
-    elif arrival_time >= datetime.time(hour=18):
-        return category(interval, datetime.timedelta(minutes=15))
-    elif last_arrival_time >= datetime.time(hour=7):
-        return category(interval, datetime.timedelta(minutes=10))
+    is_saturday = ((arrival_time.weekday() == 5 and arrival_time.hour > 4) or
+                   (arrival_time.weekday() == 6 and arrival_time.hour < 4))
+    if is_saturday:
+        if arrival_time.time() >= datetime.time(hour=20):
+            return category(interval, datetime.timedelta(minutes=20))
+        elif last_arrival_time.time() >= datetime.time(hour=8):
+            return category(interval, datetime.timedelta(minutes=15))
+        else:
+            return category(interval, datetime.timedelta(minutes=20))
     else:
-        return category(interval, datetime.timedelta(minutes=15))
+        if (arrival_time.time() >= datetime.time(hour=20) or
+            arrival_time.time() < datetime.time(hour=4)):
+            return category(interval, datetime.timedelta(minutes=20))
+        elif arrival_time.time() >= datetime.time(hour=18):
+            return category(interval, datetime.timedelta(minutes=15))
+        elif last_arrival_time.time() >= datetime.time(hour=7):
+            return category(interval, datetime.timedelta(minutes=10))
+        else:
+            return category(interval, datetime.timedelta(minutes=15))
 
 
 arrivals = load_data('801-NB.csv')
